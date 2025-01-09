@@ -18,6 +18,10 @@ app.get("/", (req, res) => {
   res.render("index");
 });
 
+app.get("/login", (req, res) => {
+  res.render("login")
+})
+
 app.post("/create", async (req, res) => {
   const { username, email, password, age } = req.body
   bcrypt.genSalt(10, function (err, salt) {
@@ -28,11 +32,41 @@ app.post("/create", async (req, res) => {
   });
   const token = jwt.sign({ email: email }, "shaaaaaa",)
   res.cookie("token", token)
-  res.render("home", { username })
+  res.redirect("/login")
 })
 
 
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  // console.log(email, password)
+  const userFind = await userModel.findOne({ email: email });
 
+  if (userFind) {
+    const hash = userFind.password;
+    bcrypt.compare(password, hash, function (err, result) {
+      if (result) {
+        const token = jwt.sign({ email: email }, "shaaaaaa",)
+        res.cookie("token", token)
+        res.render("home", { username: userFind.username })
+      } else {
+        res.send("Something is wrong!")
+      }
+    });
+  } else {
+    res.send("Something is wrong!")
+  }
+
+})
+
+app.get("/home", (req, res) => {
+  res.render("home")
+})
+
+
+app.get("/logout", (req, res) => {
+  res.clearCookie("token")
+  res.redirect("/")
+})
 
 
 
